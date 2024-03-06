@@ -18,3 +18,9 @@ body {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 0.1fr);
+    gap: 5px;
+    }

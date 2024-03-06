@@ -1,11 +1,25 @@
 import os
 from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, request, redirect, send_from_directory, url_for, flash, session, abort
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 from app.models import UserProfile
 from app.forms import LoginForm, UploadForm
+
+
+def get_uploaded_images():
+    valid_extensions = {'.jpg', '.jpeg', '.png', '.gif'}
+    image_filenames = os.listdir(app.config['UPLOAD_FOLDER'])
+
+    # Filter out files to include only those with valid image extensions
+    image_filenames = [filename for filename in image_filenames 
+                       if os.path.splitext(filename)[1].lower() in valid_extensions]
+
+    # Generate URLs without the 'uploads/' prefix
+    image_urls = [url_for('get_image', filename=filename) for filename in image_filenames]
+    print(image_urls)
+    return image_urls
 
 
 
@@ -34,7 +48,7 @@ def upload():
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         flash('File successfully uploaded!', 'success')
-        return redirect(url_for('home'))
+        return redirect(url_for('files'))
     return render_template('upload.html', form=form)
 
 
@@ -54,6 +68,17 @@ def login():
             flash('Invalid username or password.', 'danger')
     return render_template("login.html", form=form)
 
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER']), filename)
+
+
+@app.route('/files')
+@login_required
+def files():
+    image_urls = get_uploaded_images()
+    return render_template('files.html', image_urls=image_urls)
 
 # user_loader callback. This callback is used to reload the user object from
 # the user ID stored in the session
