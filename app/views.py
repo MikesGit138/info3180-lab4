@@ -9,15 +9,18 @@ from app.forms import LoginForm, UploadForm
 
 
 def get_uploaded_images():
-    valid_extensions = {'.jpg', '.jpeg', '.png', '.gif'}
-    image_filenames = os.listdir(app.config['UPLOAD_FOLDER'])
+    rootdir = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'])  # Ensure this points to your uploads directory correctly
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+    image_urls = []
 
-    # Filter out files to include only those with valid image extensions
-    image_filenames = [filename for filename in image_filenames 
-                       if os.path.splitext(filename)[1].lower() in valid_extensions]
-
-    # Generate URLs without the 'uploads/' prefix
-    image_urls = [url_for('get_image', filename=filename) for filename in image_filenames]
+    for subdir, _, files in os.walk(rootdir):
+        for file in files:
+            if any(file.lower().endswith(ext) for ext in valid_extensions):
+                # Here's the critical change: We ensure the file path is relative to the 'uploads' directory
+                relative_path = os.path.relpath(os.path.join(subdir, file), rootdir)
+                # Use 'relative_path' directly, ensuring it does not start with the uploads directory name again
+                image_url = url_for('get_image', filename=relative_path)
+                image_urls.append(image_url)
     print(image_urls)
     return image_urls
 
@@ -78,6 +81,7 @@ def get_image(filename):
 @login_required
 def files():
     image_urls = get_uploaded_images()
+    print(image_urls)
     return render_template('files.html', image_urls=image_urls)
 
 # user_loader callback. This callback is used to reload the user object from
@@ -86,6 +90,12 @@ def files():
 def load_user(id):
     return db.session.execute(db.select(UserProfile).filter_by(id=id)).scalar()
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been successfully logged out.', 'success')
+    return redirect(url_for('home'))
 ###
 # The functions below should be applicable to all Flask apps.
 ###
