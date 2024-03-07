@@ -9,16 +9,14 @@ from app.forms import LoginForm, UploadForm
 
 
 def get_uploaded_images():
-    rootdir = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'])  # Ensure this points to your uploads directory correctly
+    rootdir = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'])
     valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
     image_urls = []
 
     for subdir, _, files in os.walk(rootdir):
         for file in files:
             if any(file.lower().endswith(ext) for ext in valid_extensions):
-                # Here's the critical change: We ensure the file path is relative to the 'uploads' directory
                 relative_path = os.path.relpath(os.path.join(subdir, file), rootdir)
-                # Use 'relative_path' directly, ensuring it does not start with the uploads directory name again
                 image_url = url_for('get_image', filename=relative_path)
                 image_urls.append(image_url)
     print(image_urls)
